@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Training CartPole Agent with PPO - jeremytrane</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .blog-header {
+      max-width: 700px;
+      margin-bottom: 40px;
+    }
+    
+    .blog-title-main {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 32px;
+      font-weight: 500;
+      margin-bottom: 10px;
+      color: var(--text-primary);
+    }
+    
+    .blog-meta {
+      color: var(--text-secondary);
+      font-size: 14px;
+      margin-bottom: 10px;
+    }
+    
+    .back-link {
+      color: var(--link-color);
+      text-decoration: none;
+      font-size: 14px;
+      display: inline-block;
+      margin-bottom: 20px;
+    }
+    
+    .back-link:hover {
+      text-decoration: underline;
+    }
+    
+    .blog-content {
+      max-width: 700px;
+    }
+    
+    .blog-content h2 {
+      font-size: 24px;
+      font-weight: 600;
+      margin-top: 40px;
+      margin-bottom: 15px;
+      color: var(--text-primary);
+    }
+    
+    .blog-content h3 {
+      font-size: 20px;
+      font-weight: 600;
+      margin-top: 30px;
+      margin-bottom: 12px;
+      color: var(--text-primary);
+    }
+    
+    .blog-content p {
+      margin-bottom: 20px;
+      font-size: 16px;
+      line-height: 1.7;
+    }
+    
+    .blog-content code {
+      background-color: var(--code-bg);
+      padding: 2px 6px;
+      border: 1px solid var(--border-color);
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+    }
+    
+    .blog-content pre {
+      background-color: var(--code-bg);
+      padding: 15px;
+      border: 1px solid var(--border-color);
+      overflow-x: auto;
+      margin-bottom: 20px;
+    }
+    
+    .blog-content pre code {
+      background-color: transparent;
+      padding: 0;
+    }
+    
+    .blog-content ul, .blog-content ol {
+      margin-bottom: 20px;
+      padding-left: 25px;
+    }
+    
+    .blog-content li {
+      margin-bottom: 8px;
+      line-height: 1.6;
+    }
+    
+    .blog-content img {
+      max-width: 100%;
+      height: auto;
+      margin: 20px 0;
+      border: 1px solid var(--border-color);
+    }
+    
+    .blog-content blockquote {
+      border-left: 1px solid var(--text-primary);
+      padding-left: 20px;
+      margin: 20px 0;
+      color: var(--text-secondary);
+      font-style: italic;
+    }
+    
+    .blog-content figure {
+      margin: 30px 0;
+      text-align: center;
+    }
+    
+    .blog-content figcaption {
+      margin-top: 10px;
+      font-size: 14px;
+      color: var(--text-secondary);
+      font-style: italic;
+    }
+    
+    .blog-content video {
+      max-width: 100%;
+      height: auto;
+      border: 1px solid var(--border-color);
+    }
+    
+    .hero-video {
+      width: 400px;
+      height: auto;
+      margin: 10px auto;
+      display: block;
+      border: 1px solid var(--border-color);
+      pointer-events: none;
+      cursor: default;
+    }
+    
+    #references ol {
+      list-style-type: none;
+      counter-reset: ref-counter;
+      padding-left: 0;
+    }
+    
+    #references ol li {
+      counter-increment: ref-counter;
+      margin-bottom: 15px;
+      padding-left: 35px;
+      position: relative;
+      line-height: 1.6;
+    }
+    
+    #references ol li::before {
+      content: "[" counter(ref-counter) "]";
+      position: absolute;
+      left: 0;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    
+    #references a {
+      color: var(--link-color);
+      text-decoration: none;
+      word-break: break-all;
+    }
+    
+    #references a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1 class="site-title">jeremytrane</h1>
+      <nav>
+        <a href="index.html" class="nav-link">home</a>
+        <a href="blogs.html" class="nav-link active">blog</a>
+        <a href="https://x.com/jeremy_5005" class="nav-link" target="_blank">X</a>
+        <a href="https://github.com/jeremytrane" class="nav-link" target="_blank">GitHub</a>
+        <a href="https://www.goodreads.com/user/show/193192834-ron" class="nav-link" target="_blank">books</a>
+        <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+          <svg class="theme-icon sun-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="5"/>
+            <path d="M12 1v6m0 6v6m8.66-7H15m-6 0H3m15.66 7.66l-4.24-4.24m-4.24 0L5.34 4.34m13.32 15.32l-4.24-4.24m-4.24 0L5.34 19.66"/>
+          </svg>
+          <svg class="theme-icon moon-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+          </svg>
+        </button>
+      </nav>
+    </header>
+    
+    <main>
+      <a href="blogs.html" class="back-link">← back to blog</a>
+      
+      <article>
+        <div class="blog-header">
+          <h1 class="blog-title-main">Training a CartPole Agent with Proximal Policy Optimization (PPO)</h1>
+          <div class="blog-meta">October 4, 2025</div>
+        </div>
+        
+        <div class="blog-content">
+          
+            <video class="hero-video" autoplay loop muted playsinline>
+              <source src="cartpole_trained_agent.mp4" type="video/mp4">
+              Your browser does not support the video tag.
+            </video>
+          
+            <section id="intro">
+              <h2>1. Introduction</h2>
+              <p>
+                Reinforcement Learning (RL) has become one of the most exciting areas of machine learning,
+                with applications ranging from robotics to games like Go and StarCraft. A classic benchmark
+                for testing RL algorithms is the <strong>CartPole environment</strong> [3], where an agent must
+                balance a pole on a moving cart by applying forces left or right.
+              </p>
+              <p>
+                In this blog, we'll walk through training a CartPole agent using
+                <strong>Proximal Policy Optimization (PPO)</strong> [1] — one of the most popular and effective
+                policy gradient algorithms. We'll cover the mathematical background, explain why PPO works,
+                and then dive into the implementation details from the code.
+              </p>
+            </section>
+          
+            <section id="rl-basics">
+              <h2>2. Reinforcement Learning Basics</h2>
+              <p>
+                At its core, RL is modeled as a <strong>Markov Decision Process (MDP)</strong>, defined by:
+              </p>
+              <ul>
+                <li><strong>States</strong> \(s_t\): the environment’s representation (Cart position, velocity, pole angle, etc.).</li>
+                <li><strong>Actions</strong> \(a_t\): discrete choices (push cart left or right).</li>
+                <li><strong>Rewards</strong> \(r_t\): scalar feedback (here +1 for every timestep the pole stays upright).</li>
+              </ul>
+              <p>
+                The agent follows a <strong>policy</strong> \(\pi(a|s)\), mapping states to action probabilities.
+                In <em>policy gradient methods</em>, we directly optimize this policy by maximizing the
+                expected cumulative reward:
+              </p>
+              <p class="math">
+                \[
+                J(\theta) = \mathbb{E}_{\pi_\theta} \Bigg[ \sum_t \gamma^t r_t \Bigg]
+                \]
+              </p>
+            </section>
+          
+            <section id="trpo">
+              <h2>3. Background: TRPO</h2>
+              <p>
+                Vanilla policy gradient suffers from <strong>high variance</strong> and <strong>unstable updates</strong>.
+                Trust Region Policy Optimization (TRPO) [2] addressed this by ensuring each update stays close to
+                the old policy using a KL-divergence constraint:
+              </p>
+              <p class="math">
+                \[
+                \max_\theta \; \mathbb{E}\left[ \frac{\pi_\theta(a|s)}{\pi_{\theta_{old}}(a|s)} \hat{A}_t \right]
+                \quad \text{s.t.} \quad
+                D_{KL}(\pi_{\theta_{old}} \;||\; \pi_\theta) \leq \delta
+                \]
+              </p>
+              <p>
+                TRPO guarantees monotonic improvement, but requires expensive second-order optimization.
+                This makes it impractical for large-scale problems.
+              </p>
+            </section>
+          
+            <section id="ppo">
+              <h2>4. PPO: The Key Idea</h2>
+              <p>
+                PPO simplifies TRPO by replacing the hard KL constraint with a <strong>clipped surrogate objective</strong>.
+                Instead of enforcing a strict trust region, it limits how much the probability ratio can change:
+              </p>
+              <p class="math">
+                \[
+                L^{CLIP}(\theta) = \mathbb{E}\Big[ \min\big(r_t(\theta)\hat{A}_t,\;\;
+                \text{clip}(r_t(\theta), 1-\epsilon, 1+\epsilon)\hat{A}_t \big) \Big]
+                \]
+              </p>
+              <p>
+                where \(r_t(\theta) = \frac{\pi_\theta(a_t|s_t)}{\pi_{\theta_{old}}(a_t|s_t)}\) is the importance sampling ratio.
+              </p>
+              <p>
+                PPO also adds:
+              </p>
+              <ul>
+                <li><strong>Value loss</strong> for better baseline estimation.</li>
+                <li><strong>Entropy bonus</strong> to encourage exploration.</li>
+              </ul>
+              <p>
+                This combination makes PPO both <em>stable</em> and <em>sample-efficient</em>, which is why it has become the
+                de facto standard in RL research and applications.
+              </p>
+            </section>
+          
+            <section id="math">
+              <h2>5. Math Foundations</h2>
+              <p>
+                Let’s summarize the full PPO objective used in practice:
+              </p>
+              <p class="math">
+                \[
+                L(\theta) = \mathbb{E}\Big[ L^{CLIP}(\theta) - c_1 (V_\theta(s_t) - R_t)^2 + c_2 H[\pi_\theta](s_t) \Big]
+                \]
+              </p>
+              <ul>
+                <li>\(L^{CLIP}\): clipped surrogate policy loss.</li>
+                <li>\(V_\theta(s_t)\): value function prediction.</li>
+                <li>\(R_t\): discounted return.</li>
+                <li>\(H[\pi_\theta]\): policy entropy (encourages exploration).</li>
+              </ul>
+              <p>
+                For advantage estimation, one can use <strong>Generalized Advantage Estimation (GAE)</strong>, which trades
+                off bias and variance. This implementation uses a simpler reward-to-go approach.
+              </p>
+            </section>
+          
+            <section id="cartpole">
+              <h2>6. CartPole Setup</h2>
+              <p>
+                The CartPole environment (<code>CartPole-v1</code>) has:
+              </p>
+              <ul>
+                <li><strong>Observations</strong>: [cart position, velocity, pole angle, angular velocity] (4 floats).</li>
+                <li><strong>Actions</strong>: {0: push left, 1: push right}.</li>
+                <li><strong>Reward</strong>: +1 for every timestep the pole remains balanced.</li>
+                <li><strong>Termination</strong>: pole falls too far or cart moves out of bounds.</li>
+              </ul>
+              <p>
+                It’s a simple yet effective testbed for experimenting with RL algorithms.
+              </p>
+            </section>
+          
+            <section id="implementation">
+              <h2>7. Implementation Walkthrough</h2>
+              <h3>Policy & Value Networks</h3>
+              <p>
+                We use a shared neural network with two heads (an actor-critic network):
+              </p>
+              <ul>
+                <li><strong>Policy head</strong>: acts as teh actor. Outputs action probabilities via softmax.</li>
+                <li><strong>Value head</strong>: acts as the critic to provide feedback to calculate the value and actor follows this. Outputs a scalar estimate of state value.</li>
+              </ul>
+          
+          <pre><code class="python">
+            class ActorCriticNetwork(nn.Module):
+            def __init__(self, state_dim, action_dim, hidden_dim=64):
+                super(ActorCriticNetwork, self).__init__()
+                
+                # Shared feature extractor
+                self.shared = nn.Sequential(
+                    nn.Linear(state_dim, hidden_dim),
+                    nn.Tanh()
+                )
+                
+                # Actor head (policy)
+                self.actor = nn.Sequential(
+                    nn.Linear(hidden_dim, hidden_dim),
+                    nn.Tanh(),
+                    nn.Linear(hidden_dim, action_dim),
+                    nn.Softmax(dim=-1)
+                )
+                
+                # Critic head (value function)
+                self.critic = nn.Sequential(
+                    nn.Linear(hidden_dim, hidden_dim),
+                    nn.Tanh(),
+                    nn.Linear(hidden_dim, 1)
+                )
+            
+            def forward(self, state):
+                features = self.shared(state)
+                action_probs = self.actor(features)
+                state_value = self.critic(features)
+                return action_probs, state_value
+              </code></pre>
+          
+              <h3>Rollout Collection & Batching</h3>
+              <p>
+                The agent collects <code>rollout_len</code> steps of experience, storing states, actions,
+                rewards, and log-probabilities. After a rollout, we compute discounted returns:
+              </p>
+          
+          <pre><code class="python">
+          def compute_returns(rewards, dones, gamma, next_value):
+              returns = []
+              R = next_value
+              for reward, done in zip(reversed(rewards), reversed(dones)):
+                  if done: R = 0
+                  R = reward + gamma * R
+                  returns.insert(0, R)
+              return returns
+          </code></pre>
+          
+              <h3>Loss Functions</h3>
+              <ul>
+                <li><strong>Policy loss</strong>: PPO clipped surrogate objective.</li>
+                <li><strong>Value loss</strong>: MSE between predicted and actual returns.</li>
+                <li><strong>Entropy loss</strong>: encourages exploration.</li>
+              </ul>
+
+                  <h3>PPO Update Rule</h3>
+<pre><code class="python">
+def update(self):
+    """Update policy using PPO"""
+    # Compute last state value for bootstrapping
+    last_state = torch.FloatTensor(self.states[-1]).unsqueeze(0)
+    with torch.no_grad():
+        _, last_value = self.policy(last_state)
+        last_value = last_value.item() if not self.dones[-1] else 0.0
+    
+    # Compute returns and advantages
+    returns = self.compute_returns(last_value)
+    returns = torch.FloatTensor(returns)
+    
+    # Convert buffers to tensors
+    old_states = torch.FloatTensor(np.array(self.states))
+    old_actions = torch.LongTensor(self.actions)
+    old_log_probs = torch.FloatTensor(self.log_probs)
+    old_values = torch.FloatTensor(self.values)
+    
+    # Normalize advantages
+    advantages = returns - old_values
+    advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
+    
+    # PPO update for multiple epochs
+    for epoch in range(self.epochs):
+        indices = np.arange(len(self.states))
+        np.random.shuffle(indices)
+        
+        for start in range(0, len(self.states), self.batch_size):
+            end = start + self.batch_size
+            batch_indices = indices[start:end]
+            
+            batch_states = old_states[batch_indices]
+            batch_actions = old_actions[batch_indices]
+            batch_old_log_probs = old_log_probs[batch_indices]
+            batch_advantages = advantages[batch_indices]
+            batch_returns = returns[batch_indices]
+            
+            # Get current policy predictions
+            action_probs, state_values = self.policy(batch_states)
+            dist = Categorical(action_probs)
+            new_log_probs = dist.log_prob(batch_actions)
+            entropy = dist.entropy().mean()
+            
+            # Importance sampling ratio
+            ratio = torch.exp(new_log_probs - batch_old_log_probs)
+            
+            # Clipped surrogate loss
+            surr1 = ratio * batch_advantages
+            surr2 = torch.clamp(ratio, 1.0 - self.epsilon, 1.0 + self.epsilon) * batch_advantages
+            policy_loss = -torch.min(surr1, surr2).mean()
+            
+            # Value loss
+            value_loss = nn.MSELoss()(state_values.squeeze(), batch_returns)
+            
+            # Total loss
+            loss = policy_loss + 0.5 * value_loss - 0.01 * entropy
+            
+            # Optimize
+            self.optimizer.zero_grad()
+            loss.backward()
+            torch.nn.utils.clip_grad_norm_(self.policy.parameters(), 0.5)
+            self.optimizer.step()
+</code></pre>
+          
+              <h3>Training Loop</h3>
+              <p>
+                We iterate over episodes, collect rollouts, split into minibatches, and optimize with Adam.
+                Hyperparameters include:
+              </p>
+              <ul>
+                <li>\(\gamma = 0.99\) (discount factor)</li>
+                <li>\(\epsilon = 0.2\) (clip parameter)</li>
+                <li>Learning rate = 3e-4</li>
+                <li>Rollout length = 2048</li>
+                <li>Batch epochs = 10</li>
+              </ul>
+            <pre><code class="python">
+def train_ppo(episodes=1000, max_steps=500, update_frequency=2048):
+    """Train PPO agent on CartPole environment"""
+    env = gym.make('CartPole-v1')
+    state_dim = env.observation_space.shape[0]
+    action_dim = env.action_space.n
+    
+    agent = PPOAgent(state_dim, action_dim)
+    episode_rewards = []
+    running_reward = 0
+    step_count = 0
+    
+    for episode in tqdm(range(episodes), desc="Training PPO"):
+        state, _ = env.reset()
+        episode_reward = 0
+        done = False
+        
+        while not done:
+            action, log_prob, value = agent.select_action(state)
+            next_state, reward, terminated, truncated, _ = env.step(action)
+            done = terminated or truncated
+            
+            agent.store_transition(state, action, reward, log_prob, value, done)
+            
+            state = next_state
+            episode_reward += reward
+            step_count += 1
+            
+            # Update policy every update_frequency steps
+            if step_count % update_frequency == 0:
+                agent.update()
+        
+        episode_rewards.append(episode_reward)
+        running_reward = 0.05 * episode_reward + (1 - 0.05) * running_reward
+        
+        if len(episode_rewards) >= 100 and np.mean(episode_rewards[-100:]) >= 475:
+            print(f"Solved at episode {episode}! Average reward: {np.mean(episode_rewards[-100:]):.2f}")
+            break
+    
+    env.close()
+    return agent, episode_rewards
+</code></pre>
+            </section>
+          
+            <section id="results">
+              <h2>8. Results</h2>
+              <p>
+                After training, the PPO agent achieves the maximum score: <strong>500 reward across all 5 test runs</strong>.
+                This means the agent successfully balances the pole for the full 500 steps per episode.
+              </p>
+              <figure>
+                <video src="cartpole_trained_agent.mp4" controls loop muted></video>
+                <figcaption>Trained PPO agent balancing the pole for 500 steps.</figcaption>
+              </figure>
+            </section>
+          
+            <section id="references">
+              <h2>9. References</h2>
+              <ol>
+                <li>
+                  Schulman, J., Wolski, F., Dhariwal, P., Radford, A., & Klimov, O. (2017). 
+                  <em>Proximal Policy Optimization Algorithms</em>. 
+                  arXiv preprint arXiv:1707.06347. 
+                  <a href="https://arxiv.org/abs/1707.06347" target="_blank" rel="noopener">https://arxiv.org/abs/1707.06347</a>
+                </li>
+                <li>
+                  Schulman, J., Levine, S., Abbeel, P., Jordan, M., & Moritz, P. (2015). 
+                  <em>Trust Region Policy Optimization</em>. 
+                  In International Conference on Machine Learning (pp. 1889-1897). PMLR. 
+                  <a href="https://arxiv.org/abs/1502.05477" target="_blank" rel="noopener">https://arxiv.org/abs/1502.05477</a>
+                </li>
+                <li>
+                  Towers, M., Terry, J. K., Kwiatkowski, A., Balis, J. U., Cola, G. d., Deleu, T., Goulão, M., Kallinteris, A., KG, A., Krimmel, M., Perez-Vicente, R., Pierré, A., Schulhoff, S., Tai, J. J., Shen, A. T. J., & Younis, O. G. (2023). 
+                  <em>Gymnasium</em>. 
+                  Zenodo. 
+                  <a href="https://zenodo.org/record/8127025" target="_blank" rel="noopener">https://zenodo.org/record/8127025</a>
+                </li>
+              </ol>
+            </section>
+          
+            <section id="conclusion">
+              <h2>10. Conclusion</h2>
+              <p>
+                PPO combines the stability of TRPO with the simplicity of vanilla policy gradient methods,
+                making it a powerful algorithm for continuous control problems. Even on a small benchmark
+                like CartPole, we can see how PPO ensures stable and reliable training.
+              </p>
+            </section>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <!-- MathJax for rendering equations -->
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script id="MathJax-script" async
+    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+  <script>
+    // Theme Toggle Functionality
+    (function() {
+      const themeToggle = document.getElementById('themeToggle');
+      const body = document.body;
+      
+      // Check for saved theme preference or default to light mode
+      const currentTheme = localStorage.getItem('theme') || 'light';
+      if (currentTheme === 'dark') {
+        body.classList.add('dark-mode');
+      }
+      
+      // Toggle theme on button click
+      themeToggle.addEventListener('click', () => {
+        body.classList.toggle('dark-mode');
+        
+        // Save theme preference
+        const theme = body.classList.contains('dark-mode') ? 'dark' : 'light';
+        localStorage.setItem('theme', theme);
+      });
+    })();
+  </script>
+</body>
+</html>
